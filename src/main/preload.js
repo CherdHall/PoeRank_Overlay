@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   onCurrentSettings:  (cb) => ipcRenderer.on('settings:current',  (_, d) => cb(d)),
   onHotkeyAnchor:     (cb) => ipcRenderer.on('anchor:hotkey',     (_)    => cb()),
   onClientStatus:     (cb) => ipcRenderer.on('client:status',     (_, d) => cb(d)),
+  onClientPathError:  (cb) => ipcRenderer.on('client:pathError',  (_, d) => cb(d)),
   onPanelPosition:    (cb) => ipcRenderer.on('panel:position',    (_, d) => cb(d)),
 
   // Renderer → Main senders

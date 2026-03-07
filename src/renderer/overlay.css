@@ -224,6 +224,15 @@ button:disabled:hover { background: #2e1e0e; border-color: #5a3a1a; }
   font-size: 13px;
 }
 
+/* Error message shown below the Client.txt input on bad path entry */
+#client-error {
+  font-size: 10px;
+  color: #cc4444;
+  font-weight: 600;
+  text-align: center;
+  min-height: 0;
+}
+
 /* ── Instructions ── */
 #instr-divider {
   border-top: 1px solid #3a2a14;

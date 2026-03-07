@@ -33,11 +33,12 @@ function formatCountdown(remaining, paused, stopped) {
 // ─── State ───────────────────────────────────────────────────────────────────
 
 const state = {
-  prevLeagueRank: null,
-  prevClassRank:  null,
-  idle:           false,
-  anchored:       true,
-  storedLeague:   ''
+  prevLeagueRank:       null,
+  prevClassRank:        null,
+  idle:                 false,
+  anchored:             true,
+  storedLeague:         '',
+  awaitingClientConfirm: false   // set true while waiting for main to validate a manually typed path
 };
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ const btnAnchor   = document.getElementById('btn-anchor');
 const clientRow   = document.getElementById('client-row');
 const inpClient   = document.getElementById('inp-client');
 const btnBrowse   = document.getElementById('btn-browse');
+const elClientError = document.getElementById('client-error');
 
 // ─── Dynamic panel height reporting ──────────────────────────────────────────
 // Whenever the settings panel's rendered height changes (content added/removed),
@@ -117,9 +119,9 @@ window.api.onRankUpdate((data) => {
 window.api.onRankError((data) => {
   setStatus(data.error || 'Unknown error', 'error');
   // Only surface the error in the countdown box after 2+ consecutive failures,
-  // so a single transient error during a character switch doesn't flash "NO CHAR".
+  // so a single transient error during a character/settings change doesn't flash erroneously.
   if (state.anchored && (data.consecutiveErrors || 0) >= 2) {
-    elCountdown.textContent = 'NO CHAR';
+    elCountdown.textContent = data.connectionError ? 'NO CONN' : 'NO CHAR';
     elCountdown.style.color = '#b01a1a';
     elCountdown.classList.add('countdown-error');
   }
@@ -180,6 +182,18 @@ window.api.onHotkeyAnchor(() => {
 
 window.api.onClientStatus(({ found }) => {
   clientRow.classList.toggle('hidden', found);
+  if (found) {
+    elClientError.textContent = '';
+    if (state.awaitingClientConfirm) {
+      setStatus('Client.txt path saved.', 'ok');
+      state.awaitingClientConfirm = false;
+    }
+  }
+});
+
+window.api.onClientPathError(({ message }) => {
+  state.awaitingClientConfirm = false;
+  elClientError.textContent = message;
 });
 
 window.api.onPollStatus(({ idle }) => {
@@ -262,6 +276,7 @@ btnBrowse.addEventListener('click', async () => {
   const filePath = await window.api.browseClientTxt();
   if (filePath) {
     inpClient.value = filePath;
+    elClientError.textContent = '';
     clientRow.classList.add('hidden');
     setStatus('Client.txt path saved.', 'ok');
   }
@@ -271,9 +286,10 @@ btnBrowse.addEventListener('click', async () => {
 function saveClientPath() {
   const p = inpClient.value.trim();
   if (p) {
+    elClientError.textContent = '';
+    state.awaitingClientConfirm = true;
     window.api.setClientPath(p);
-    clientRow.classList.add('hidden');
-    setStatus('Client.txt path saved.', 'ok');
+    // Row visibility and success/error feedback handled by onClientStatus / onClientPathError
   }
 }
 inpClient.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveClientPath(); });

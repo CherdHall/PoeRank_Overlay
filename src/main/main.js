@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs   = require('fs');
 
 const store          = require('./store');
 const api            = require('./api');
@@ -40,6 +42,7 @@ let lastPanelH     = PANEL_H_INITIAL;
 let overlayScreenX = 0;           // screen X of the overlay image (not necessarily win X)
 let overlayScreenY = 0;           // screen Y of the overlay image (not necessarily win Y)
 let _repositioning = false;       // guard against recursive moved events during flip
+let _positionSaveTimer = null;    // debounce handle for store position writes
 let poller, clientWatcher, gameDetector;
 
 // ─── Asset path helper ───────────────────────────────────────────────────────
@@ -142,8 +145,13 @@ function updateOverlayPosition() {
   const [x, y] = win.getPosition();
   overlayScreenX = x;
   overlayScreenY = panelAbove ? y + lastPanelH : y;
-  store.set('overlayX', overlayScreenX);
-  store.set('overlayY', overlayScreenY);
+
+  // Debounce disk writes — position variables are updated immediately for flip calculations
+  clearTimeout(_positionSaveTimer);
+  _positionSaveTimer = setTimeout(() => {
+    store.set('overlayX', overlayScreenX);
+    store.set('overlayY', overlayScreenY);
+  }, 300);
 
   // While unanchored, check on every drag whether the panel should flip sides
   if (!anchored) {
@@ -355,6 +363,11 @@ function registerIPC() {
   // Client.txt manual path — set directly from text input
   ipcMain.on('client:setPath', (_, filePath) => {
     if (!filePath) return;
+    if (!fs.existsSync(filePath)) {
+      console.warn('[main] Client.txt path not found:', filePath);
+      send('client:pathError', { message: 'File does not exist' });
+      return;
+    }
     store.set('clientTxtPath', filePath);
     clientWatcher.updatePath(filePath);
     console.log('[main] Client.txt path set manually:', filePath);
@@ -377,6 +390,50 @@ function registerIPC() {
     send('client:status', { found: true });
     return filePath;
   });
+}
+
+// ─── Auto updater ────────────────────────────────────────────────────────────
+// Only runs in packaged builds. Feed URL is configured via package.json "publish".
+// User is always prompted before a download starts and again before a restart.
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload        = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on('update-available', (info) => {
+    dialog.showMessageBox({
+      type:      'info',
+      title:     'Update Available',
+      message:   `PoeRank Overlay v${info.version} is available.`,
+      detail:    'Would you like to download and install it now?',
+      buttons:   ['Download & Install', 'Later'],
+      defaultId: 0,
+      cancelId:  1
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.downloadUpdate();
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox({
+      type:      'info',
+      title:     'Update Ready',
+      message:   'Update downloaded.',
+      detail:    'Restart PoeRank Overlay now to apply the update?',
+      buttons:   ['Restart Now', 'Later'],
+      defaultId: 0,
+      cancelId:  1
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[updater] error:', err.message);
+  });
+
+  // Delay the first check so the overlay is fully ready before the dialog could appear
+  setTimeout(() => autoUpdater.checkForUpdates(), 8000);
 }
 
 // ─── App lifecycle ───────────────────────────────────────────────────────────
@@ -402,6 +459,8 @@ app.whenReady().then(() => {
   });
 
   startServices();
+
+  if (app.isPackaged) setupAutoUpdater();
 
   // Send initial anchor state and current settings to renderer once loaded
   win.webContents.once('did-finish-load', () => {

@@ -106,7 +106,7 @@ class Poller {
     } catch (err) {
       console.error('[poller] fetch error:', err.message);
       this.consecutiveErrors++;
-      this.onError({ error: err.message, consecutiveErrors: this.consecutiveErrors });
+      this.onError({ error: err.message, consecutiveErrors: this.consecutiveErrors, connectionError: true });
       this.remaining = 300;
     } finally {
       this.fetching = false;
