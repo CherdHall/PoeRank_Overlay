@@ -1,0 +1,266 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 172px;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* When panel flips above the overlay, reverse the visual stacking order */
+body.panel-above {
+  flex-direction: column-reverse;
+}
+
+/* Adjust border when the panel is on top */
+body.panel-above #settings-panel {
+  border-top: 1px solid #5a3a1a;
+  border-bottom: none;
+}
+
+/* ── Overlay image container ── */
+#overlay-wrap {
+  position: relative;
+  width: 172px;
+  height: 190px;
+  flex-shrink: 0;
+}
+
+#overlay-bg {
+  display: block;
+  width: 172px;
+  height: 190px;
+  pointer-events: none;
+}
+
+/* ── Value boxes (absolute over image) ──
+   Coordinates measured from pixel analysis of overlay_template.png (172×190):
+     Column separator at x=79, right edge at x=147 → value box x=81..145
+     Horizontal separators: row1 y=61–95, row2 y=98–122, row3 y=125–149
+     Bottom section (countdown right box): x=75..145, y=154–177
+*/
+.val-box {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* League rank — top nudged down 4px from raw measurement */
+#box-league    { left: 81px; top: 65px;  width: 64px; height: 34px; }
+/* Class or Ascendancy rank */
+#box-class     { left: 81px; top: 98px;  width: 64px; height: 24px; }
+/* XP per hour */
+#box-xp        { left: 81px; top: 125px; width: 64px; height: 24px; }
+/* Countdown timer — top nudged up 3px from raw measurement */
+#box-countdown { left: 73px; top: 152px; width: 70px; height: 23px; }
+
+/* Rank values: bold, dark, sized to fit */
+.rank-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+#box-xp span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+#box-countdown span {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Error text shown in the countdown box — font-size tuned independently */
+#box-countdown span.countdown-error {
+  font-size: 14px;
+}
+
+/* Rank color states */
+.rank-improved { color: #1a7a1a !important; }
+.rank-worse    { color: #b01a1a !important; }
+.rank-idle     { opacity: 0.45; }
+
+/* ── Settings panel ── */
+#settings-panel {
+  width: 172px;
+  background: #1c1510;
+  border: 1px solid #5a3a1a;
+  border-top: none;
+  padding: 8px 8px 10px;
+  -webkit-app-region: drag;   /* whole panel is draggable */
+}
+
+#settings-panel.hidden { display: none; }
+.hidden { display: none !important; }
+
+#settings-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+label {
+  font-size: 10px;
+  color: #c8a870;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+select, input[type="text"] {
+  width: 100%;
+  background: #0e0a07;
+  color: #e8d8b8;
+  border: 1px solid #5a3a1a;
+  border-radius: 2px;
+  padding: 3px 5px;
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+select:focus, input[type="text"]:focus {
+  border-color: #9a6a2a;
+}
+
+select option { background: #1c1510; }
+
+#status-line {
+  font-size: 10px;
+  color: #a87040;
+  text-align: center;
+  -webkit-app-region: no-drag;
+  /* Collapses to zero height when empty so it doesn't create dead space */
+  min-height: 0;
+}
+
+#status-line.error  { color: #cc4444; }
+#status-line.ok     { color: #44aa44; }
+
+#btn-row {
+  display: flex;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+button {
+  flex: 1;
+  padding: 4px 0;
+  background: #2e1e0e;
+  color: #c8a870;
+  border: 1px solid #5a3a1a;
+  border-radius: 2px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-app-region: no-drag;
+}
+
+button:hover  { background: #3e2a14; border-color: #9a6a2a; }
+button:active { background: #1c1510; }
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:disabled:hover { background: #2e1e0e; border-color: #5a3a1a; }
+
+#btn-anchor {
+  background: #1a3a1a;
+  border-color: #3a6a3a;
+  color: #80c880;
+}
+#btn-anchor:hover { background: #254825; }
+
+/* ── Client.txt manual path ── */
+#client-row { -webkit-app-region: no-drag; }
+
+#client-label {
+  font-size: 9px;
+  color: #884444;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#client-input-row {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+#client-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+#btn-browse {
+  flex: none;
+  width: 26px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+/* ── Instructions ── */
+#instr-divider {
+  border-top: 1px solid #3a2a14;
+  margin: 2px 0 4px;
+}
+
+#instructions {
+  margin: 0;
+  padding-left: 18px;
+  list-style: decimal;
+  -webkit-app-region: no-drag;
+}
+
+#instructions li {
+  font-size: 10px;
+  color: #8a7050;
+  line-height: 1.7;
+}
+
+#instructions li:last-child {
+  color: #9a8060;
+  font-style: italic;
+}
+
+.hotkey {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 9px;
+  color: #c8a870;
+  background: #0e0a07;
+  border: 1px solid #5a3a1a;
+  border-radius: 2px;
+  padding: 0 3px;
+}
+
+/* ── Unanchored drag region on overlay itself ── */
+body.unanchored #overlay-wrap {
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+body.unanchored #overlay-wrap:active { cursor: grabbing; }

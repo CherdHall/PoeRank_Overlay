@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoeRank Overlay</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+
+  <!-- ── Overlay display (always visible) ── -->
+  <div id="overlay-wrap">
+    <img id="overlay-bg" src="../../assets/overlay_template.png" draggable="false" alt="">
+
+    <!-- Value boxes positioned over the template image -->
+    <div class="val-box" id="box-league">
+      <span id="val-league" class="rank-val">—</span>
+    </div>
+    <div class="val-box" id="box-class">
+      <span id="val-class" class="rank-val">—</span>
+    </div>
+    <div class="val-box" id="box-xp">
+      <span id="val-xp">—</span>
+    </div>
+    <div class="val-box" id="box-countdown">
+      <span id="val-countdown">—</span>
+    </div>
+  </div>
+
+  <!-- ── Settings panel (shown only when unanchored) ── -->
+  <div id="settings-panel" class="hidden">
+    <div id="settings-inner">
+
+      <div class="field-row">
+        <label for="sel-league">League</label>
+        <select id="sel-league">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label for="inp-char">Character</label>
+        <input id="inp-char" type="text" placeholder="ExactCharName" spellcheck="false" autocomplete="off">
+      </div>
+
+      <div id="status-line"></div>
+
+      <div id="btn-row">
+        <button id="btn-test">Test</button>
+        <button id="btn-anchor">Anchor ▲</button>
+      </div>
+
+      <!-- Shown only when Client.txt cannot be auto-discovered -->
+      <div id="client-row" class="field-row hidden">
+        <label>Client.txt path <span id="client-label">(required)</span></label>
+        <div id="client-input-row">
+          <input id="inp-client" type="text" placeholder="G:\PoE\logs\Client.txt" spellcheck="false" autocomplete="off">
+          <button id="btn-browse" title="Browse…">…</button>
+        </div>
+      </div>
+
+      <div id="instr-divider"></div>
+
+      <ol id="instructions">
+        <li>Select League</li>
+        <li>Enter Exact Character Name</li>
+        <li>Hit Test to Confirm Character</li>
+        <li>Move to desired position</li>
+        <li>Hit Anchor Button</li>
+        <li><span class="hotkey">Ctrl+Shift+F12</span> to un-anchor</li>
+        <li>Have Fun!</li>
+      </ol>
+
+    </div>
+  </div>
+
+  <script src="overlay.js"></script>
+</body>
+</html>
