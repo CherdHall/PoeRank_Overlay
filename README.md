@@ -44,7 +44,7 @@ What PoeRank Overlay does:
 •	Monitors the Path of Exile process — checks whether the game is running, minimized, or in the foreground, using a small PowerShell script. This is used exclusively to hide the overlay when the game is not visible.
 •	Makes HTTP requests to PoeRank.com — sends your selected league name and character name as query parameters to retrieve your public ladder ranking. This is the same data visible to anyone on the Path of Exile website. No account credentials, email addresses, or personal information are transmitted.
 •	Stores settings locally — your league, character name, overlay position, and Client.txt path are saved in a configuration file on your machine at %APPDATA%\PoeRank Overlay\config.json. This file never leaves your computer and is deleted if the overlay application is uninstalled.
-•	Checks for updates — on launch, the app may contact poerank.com or GitHub to check if a newer version is available. If an update is found, it is downloaded and applied silently in the background.
+•	Checks for updates — the app checks poerank.com or GitHub to check if a newer version is available. If an update is found, it is downloaded and installed the next time you close out the app. An “Install Update” button is added to the tray icon until the update is installed.
 What PoeRank Overlay does not do:
 •	Does not read game memory or interact with the Path of Exile process in any way beyond checking whether the window is open.
 •	Does not modify any game files.

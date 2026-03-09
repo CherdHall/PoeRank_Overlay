@@ -43,6 +43,7 @@ let overlayScreenX = 0;           // screen X of the overlay image (not necessar
 let overlayScreenY = 0;           // screen Y of the overlay image (not necessarily win Y)
 let _repositioning = false;       // guard against recursive moved events during flip
 let _positionSaveTimer = null;    // debounce handle for store position writes
+let updateReady    = false;       // true once a new version has been fully downloaded
 let poller, clientWatcher, gameDetector;
 
 // ─── Asset path helper ───────────────────────────────────────────────────────
@@ -57,30 +58,55 @@ function assetPath(filename) {
 
 // ─── System tray ─────────────────────────────────────────────────────────────
 
+// Rebuilds the tray context menu. Called on creation and again when an update
+// becomes ready so the "Install Update" item can be added dynamically.
+function buildTrayMenu() {
+  const template = [];
+
+  if (updateReady) {
+    template.push({
+      label: 'Install Update',
+      click: () => {
+        dialog.showMessageBox({
+          type:      'info',
+          title:     'Install Update',
+          message:   'A new version of PoeRank Overlay is ready to install.',
+          detail:    'The app will close and restart to apply the update.',
+          buttons:   ['Restart Now', 'Later'],
+          defaultId: 0,
+          cancelId:  1
+        }).then(({ response }) => {
+          if (response === 0) autoUpdater.quitAndInstall();
+        });
+      }
+    });
+    template.push({ type: 'separator' });
+  }
+
+  template.push({
+    label: 'Open Settings',
+    click: () => {
+      if (win) {
+        forceShowSettings = true;
+        win.show();
+        if (anchored) setAnchored(false);
+      }
+    }
+  });
+  template.push({ type: 'separator' });
+  template.push({
+    label: 'Quit PoeRank Overlay',
+    click: () => app.quit()
+  });
+
+  tray.setContextMenu(Menu.buildFromTemplate(template));
+}
+
 function createTray() {
   const icon = nativeImage.createFromPath(assetPath('icon.ico'));
   tray = new Tray(icon);
   tray.setToolTip('PoeRank Overlay');
-
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Open Settings',
-      click: () => {
-        if (win) {
-          forceShowSettings = true;
-          win.show();
-          if (anchored) setAnchored(false);
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit PoeRank Overlay',
-      click: () => app.quit()
-    }
-  ]);
-
-  tray.setContextMenu(menu);
+  buildTrayMenu();
 
   // Double-click also toggles the settings panel
   tray.on('double-click', () => {
@@ -394,45 +420,25 @@ function registerIPC() {
 
 // ─── Auto updater ────────────────────────────────────────────────────────────
 // Only runs in packaged builds. Feed URL is configured via package.json "publish".
-// User is always prompted before a download starts and again before a restart.
+// Updates download and install silently — no popups ever appear automatically.
+// The new version is applied the next time the user quits. "Install Update" also
+// appears in the tray menu so users who keep the app running can restart on demand.
 
 function setupAutoUpdater() {
-  autoUpdater.autoDownload        = false;
-  autoUpdater.autoInstallOnAppQuit = false;
-
-  autoUpdater.on('update-available', (info) => {
-    dialog.showMessageBox({
-      type:      'info',
-      title:     'Update Available',
-      message:   `PoeRank Overlay v${info.version} is available.`,
-      detail:    'Would you like to download and install it now?',
-      buttons:   ['Download & Install', 'Later'],
-      defaultId: 0,
-      cancelId:  1
-    }).then(({ response }) => {
-      if (response === 0) autoUpdater.downloadUpdate();
-    });
-  });
+  autoUpdater.autoDownload         = true;  // silent background download
+  autoUpdater.autoInstallOnAppQuit = true;  // apply automatically on next quit
 
   autoUpdater.on('update-downloaded', () => {
-    dialog.showMessageBox({
-      type:      'info',
-      title:     'Update Ready',
-      message:   'Update downloaded.',
-      detail:    'Restart PoeRank Overlay now to apply the update?',
-      buttons:   ['Restart Now', 'Later'],
-      defaultId: 0,
-      cancelId:  1
-    }).then(({ response }) => {
-      if (response === 0) autoUpdater.quitAndInstall();
-    });
+    console.log('[updater] update downloaded — will install on next quit');
+    updateReady = true;
+    buildTrayMenu();
   });
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] error:', err.message);
   });
 
-  // Delay the first check so the overlay is fully ready before the dialog could appear
+  // Delay the first check so the overlay is fully initialised first
   setTimeout(() => autoUpdater.checkForUpdates(), 8000);
 }
 
